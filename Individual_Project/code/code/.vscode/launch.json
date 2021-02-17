@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "C:\\Users\\Jayde\\Documents\\School\\Spring 2021\\CMPT 417\\CMPT417\\Individual Project\\code\\code\\run_experiments.py",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual Project\\code\\code\\run_experiments.py",
             "console": "integratedTerminal"
         }
     ]
