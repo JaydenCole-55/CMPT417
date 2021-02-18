@@ -1,7 +1,7 @@
 import heapq
 
 def move(loc, dir):
-    directions = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+    directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)] 
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 
@@ -115,30 +115,31 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
-    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None}
+    step': 0} # Add timestep of 0 to root
     push_node(open_list, root)
-    closed_list[(root['loc'])] = root
+    closed_list[(root['loc'], root['t_step'])] = root  # Make indexing of closed list the location and time step
     while len(open_list) > 0:
         curr = pop_node(open_list)
         #############################
         # Task 1.4: Adjust the goal test condition to handle goal constraints
         if curr['loc'] == goal_loc:
             return get_path(curr)
-        for dir in range(4):
+        for dir in range(5):
             child_loc = move(curr['loc'], dir)
             if my_map[child_loc[0]][child_loc[1]]:
                 continue
             child = {'loc': child_loc,
                     'g_val': curr['g_val'] + 1,
                     'h_val': h_values[child_loc],
-                    'parent': curr}
-            if (child['loc']) in closed_list:
-                existing_node = closed_list[(child['loc'])]
+                    'parent': curr,
+                    't_step': curr['t_step'] + 1} # Add child timestep as 1 greater than parents
+            if (child['loc'], child['t_step']) in closed_list: # Check if location and time is already occupied in closed list
+                existing_node = closed_list[(child['loc'], child['t_step'])]
                 if compare_nodes(child, existing_node):
-                    closed_list[(child['loc'])] = child
+                    closed_list[(child['loc'], child['t_step'])] = child
                     push_node(open_list, child)
             else:
-                closed_list[(child['loc'])] = child
+                closed_list[(child['loc'], child['t_step'])] = child
                 push_node(open_list, child)
 
     return None  # Failed to find solutions
