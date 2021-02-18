@@ -115,7 +115,8 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
-    step': 0} # Add timestep of 0 to root
+    build_constraint_table(constraints, agent) # Build constraint table
+    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 't_step': 0} # Add timestep of 0 to root
     push_node(open_list, root)
     closed_list[(root['loc'], root['t_step'])] = root  # Make indexing of closed list the location and time step
     while len(open_list) > 0:
