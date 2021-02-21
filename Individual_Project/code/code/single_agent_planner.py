@@ -49,12 +49,27 @@ def compute_heuristics(my_map, goal):
 
 def build_constraint_table(constraints, agent):
     ##############################
-    # Task 1.2/1.3: Return a table that constains the list of constraints of
+    # Task 1.2/1.3: Return a table that contains the list of constraints of
     #               the given agent for each time step. The table can be used
     #               for a more efficient constraint violation check in the 
     #               is_constrained function.
+    constraint_table = []
 
-    pass
+    for constraint in constraints:
+        # Check if the constraint applies to this agent
+        if agent != constraint['agent']:
+            continue
+
+        # Dynamically add more time step indicies if they have not been created yet 
+        if constraint['timestep'] >= len(constraint_table):
+            constraint_table += [[]] * (constraint['timestep'] - len(constraint_table) + 1)
+
+        if len(constraint['loc']) == 1:
+            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + constraint['loc']
+        elif len(constraint['loc']) == 2:
+            constraint_table[constraint['timestep']-1] = constraint_table[constraint['timestep']-1] + constraint['loc']
+
+    return constraint_table
 
 
 def get_location(path, time):
@@ -82,7 +97,22 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     #               any given constraint. For efficiency the constraints are indexed in a constraint_table
     #               by time step, see build_constraint_table.
 
-    pass
+    curr_time = next_time-1
+
+    # Time step is larger than any constraint time step
+    if next_time >= len(constraint_table):
+        return False
+
+    # Detect negative edge contraints (current square to next square constrained in sequence in constraint table)
+    if curr_loc in constraint_table[curr_time] and next_loc in constraint_table[curr_time]:
+        if constraint_table[curr_time].index(curr_loc) == (constraint_table[curr_time].index(next_loc) - 1):
+            return True
+
+    # Does the next location break a constraint
+    if next_loc in constraint_table[next_time]:
+        return True
+
+    return False
 
 
 def push_node(open_list, node):
@@ -115,10 +145,10 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     h_value = h_values[start_loc]
-    build_constraint_table(constraints, agent) # Build constraint table
-    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 't_step': 0} # Add timestep of 0 to root
+    constraint_table = build_constraint_table(constraints, agent) # Build constraint table
+    root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 'timestep': 0} # Add timestep of 0 to root
     push_node(open_list, root)
-    closed_list[(root['loc'], root['t_step'])] = root  # Make indexing of closed list the location and time step
+    closed_list[(root['loc'], root['timestep'])] = root  # Make indexing of closed list the location and time step
     while len(open_list) > 0:
         curr = pop_node(open_list)
         #############################
@@ -133,14 +163,16 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
                     'g_val': curr['g_val'] + 1,
                     'h_val': h_values[child_loc],
                     'parent': curr,
-                    't_step': curr['t_step'] + 1} # Add child timestep as 1 greater than parents
-            if (child['loc'], child['t_step']) in closed_list: # Check if location and time is already occupied in closed list
-                existing_node = closed_list[(child['loc'], child['t_step'])]
+                    'timestep': curr['timestep'] + 1} # Add child timestep as 1 greater than parents
+            if is_constrained(curr['loc'], child['loc'], child['timestep'], constraint_table ): # Prune children that are constrained
+                continue
+            if (child['loc'], child['timestep']) in closed_list: # Check if location and time is already occupied in closed list
+                existing_node = closed_list[(child['loc'], child['timestep'])]
                 if compare_nodes(child, existing_node):
-                    closed_list[(child['loc'], child['t_step'])] = child
+                    closed_list[(child['loc'], child['timestep'])] = child
                     push_node(open_list, child)
             else:
-                closed_list[(child['loc'], child['t_step'])] = child
+                closed_list[(child['loc'], child['timestep'])] = child
                 push_node(open_list, child)
 
     return None  # Failed to find solutions
