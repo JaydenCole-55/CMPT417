@@ -67,7 +67,7 @@ def build_constraint_table(constraints, agent):
         if len(constraint['loc']) == 1:
             constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + constraint['loc']
         elif len(constraint['loc']) == 2:
-            constraint_table[constraint['timestep']-1] = constraint_table[constraint['timestep']-1] + constraint['loc']
+            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
 
     return constraint_table
 
@@ -97,21 +97,19 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     #               any given constraint. For efficiency the constraints are indexed in a constraint_table
     #               by time step, see build_constraint_table.
 
-    curr_time = next_time-1
-
     # Time step is larger than any constraint time step
     if next_time >= len(constraint_table):
         return False
 
-    # Detect negative edge contraints (current square to next square constrained in sequence in constraint table)
-    if curr_loc in constraint_table[curr_time] and next_loc in constraint_table[curr_time]:
-        if constraint_table[curr_time].index(curr_loc) == (constraint_table[curr_time].index(next_loc) - 1):
-            return True
-
-    # Does the next location break a constraint
+    # Does the next location break a vertex constraint
     if next_loc in constraint_table[next_time]:
         return True
 
+    # Check for an edge constraint
+    if [curr_loc, next_loc] in constraint_table[next_time]:
+        return True
+
+    # No constraint for this move
     return False
 
 
@@ -127,6 +125,10 @@ def pop_node(open_list):
 def compare_nodes(n1, n2):
     """Return true is n1 is better than n2."""
     return n1['g_val'] + n1['h_val'] < n2['g_val'] + n2['h_val']
+
+
+# def constrained_in_future(node, constraint_table):
+#     """ Return True if the node is in a constraint at some timestep in the future"""
 
 
 def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
