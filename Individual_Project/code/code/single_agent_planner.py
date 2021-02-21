@@ -127,8 +127,19 @@ def compare_nodes(n1, n2):
     return n1['g_val'] + n1['h_val'] < n2['g_val'] + n2['h_val']
 
 
-# def constrained_in_future(node, constraint_table):
-#     """ Return True if the node is in a constraint at some timestep in the future"""
+def constrained_in_future(node, constraint_table):
+    """ Return True if the node is in a constraint at some timestep in the future"""
+
+    # Check if the timestep is greater than greatest timestep of constraints
+    if node['timestep'] >= len(constraint_table):
+        return False
+
+    # Check for every timestep in the future if goal node is vertex constrained
+    for i in range( node['timestep'], len(constraint_table) ):
+        if node['loc'] in constraint_table[i]:
+            return True
+
+    return False
 
 
 def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
@@ -154,8 +165,8 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     while len(open_list) > 0:
         curr = pop_node(open_list)
         #############################
-        # Task 1.4: Adjust the goal test condition to handle goal constraints
-        if curr['loc'] == goal_loc:
+        # Task 1.4: Adjust the goal test condition to handle goal constraints --> Added function to check if the goal node was constrained in the future
+        if curr['loc'] == goal_loc and not constrained_in_future(curr, constraint_table):
             return get_path(curr)
         for dir in range(5):
             child_loc = move(curr['loc'], dir)
