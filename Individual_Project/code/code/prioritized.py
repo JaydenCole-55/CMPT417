@@ -28,10 +28,11 @@ class PrioritizedPlanningSolver(object):
 
         start_time = timer.time()
         result = []
-        # constraints = []
+        constraints = []
+        max_path_length = 0
         # Sample constraint:
         # {'agent': 0, 'loc': [(1, 5)], 'timestep': 10},
-        constraints = [ {'agent': 1, 'loc': [(1, 2)], 'timestep': 1}, {'agent': 1, 'loc': [(1, 3)], 'timestep': 2}, {'agent': 1, 'loc': [(1, 3), (1, 4)], 'timestep': 2}, {'agent': 1, 'loc': [(1, 3), (1, 2)], 'timestep': 2}]
+        # constraints = [ {'agent': 1, 'loc': [(1, 2)], 'timestep': 1}, {'agent': 1, 'loc': [(1, 3)], 'timestep': 2}, {'agent': 1, 'loc': [(1, 3), (1, 4)], 'timestep': 2}, {'agent': 1, 'loc': [(1, 3), (1, 2)], 'timestep': 2}]
 
         for i in range(self.num_of_agents):  # Find path for each agent
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
@@ -40,13 +41,36 @@ class PrioritizedPlanningSolver(object):
                 raise BaseException('No solutions')
             result.append(path)
 
+            if len(path) >= max_path_length:
+                max_path_length = len(path)
+
             ##############################
             # Task 2: Add constraints here
             #         Useful variables:
             #            * path contains the solution path of the current (i'th) agent, e.g., [(1,1),(1,2),(1,3)]
             #            * self.num_of_agents has the number of total agents
             #            * constraints: array of constraints to consider for future A* searches
+            
+            for agent in range(i+1, self.num_of_agents):
+                for timestep in range(1, len(path)):
+                    # Add vertex constraint at this timestep
+                    constraints += [{'agent'    : agent, 
+                                     'loc'      : [path[timestep]],
+                                     'timestep' : timestep}]
 
+                    # Add edge constraint at this timestep
+                    constraints += [{'agent'    : agent, 
+                                     'loc'      : [path[timestep], path[timestep-1]],
+                                     'timestep' : timestep}]
+
+                # Add agent's finishing square as a constraint to all other agents (Task 2.3)
+                constraints += [{'agent'    : agent,
+                                 'loc'      : path[-1],
+                                 'timestep' : 0,          # Put the constraint into timestep 0 as no other constraints are applied into timestep 0 for an agent
+                                 'tafter'   : len(path)}] # Add addition information when this constraint comes into effect
+
+
+                
 
             ##############################
 

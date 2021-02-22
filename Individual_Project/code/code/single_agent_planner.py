@@ -64,9 +64,10 @@ def build_constraint_table(constraints, agent):
         if constraint['timestep'] >= len(constraint_table):
             constraint_table += [[]] * (constraint['timestep'] - len(constraint_table) + 1)
 
-        if len(constraint['loc']) == 1:
-            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + constraint['loc']
-        elif len(constraint['loc']) == 2:
+        # Add agent ending constraints to timestep 0 along with info about when they come into effect
+        if constraint['timestep'] == 0:
+            constraint_table[0] = constraint_table[0] + [[constraint['loc'], constraint['tafter']]]
+        else: # Add every other constraint to the table to the timestep it applies to
             constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
 
     return constraint_table
@@ -97,16 +98,22 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     #               any given constraint. For efficiency the constraints are indexed in a constraint_table
     #               by time step, see build_constraint_table.
 
+    # Check if the next_loc at next_time is a finishing square for another agent (Task 2.3)
+    if len(constraint_table) > 0:
+        for constraint in constraint_table[0]:
+            if next_loc == constraint[0] and constraint[1] <= next_time:
+                return True
+
     # Time step is larger than any constraint time step
     if next_time >= len(constraint_table):
         return False
 
     # Does the next location break a vertex constraint
-    if next_loc in constraint_table[next_time]:
+    if [next_loc] in constraint_table[next_time]:
         return True
 
     # Check for an edge constraint
-    if [curr_loc, next_loc] in constraint_table[next_time]:
+    if [curr_loc, next_loc] in constraint_table[next_time] or [next_loc, curr_loc] in constraint_table[next_time]:
         return True
 
     # No constraint for this move
@@ -136,7 +143,7 @@ def constrained_in_future(node, constraint_table):
 
     # Check for every timestep in the future if goal node is vertex constrained
     for i in range( node['timestep'], len(constraint_table) ):
-        if node['loc'] in constraint_table[i]:
+        if [node['loc']] in constraint_table[i]:
             return True
 
     return False
