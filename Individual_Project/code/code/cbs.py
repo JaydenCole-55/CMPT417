@@ -12,7 +12,25 @@ def detect_collision(path1, path2):
     #           An edge collision occurs if the robots swap their location at the same timestep.
     #           You should use "get_location(path, t)" to get the location of a robot at time t.
 
-    pass
+    # Vertex collisions will have the form {'a1':agent#1, 'a2':agent#2, 'loc':[(#,#)], 'timestep':#}
+    # Edge collisions will have the form {'a1':agent#1, 'a2':agent#2, 'loc':[(#,#), (#,#)], 'timestep':#} 
+    
+    for timestep in range(max(len(path1), len(path2))):
+        a1_curr_loc = get_location(path1, timestep)
+        a2_curr_loc = get_location(path2, timestep)
+
+        # Check for vertex constraint
+        if a1_curr_loc == a2_curr_loc:
+            return [timestep, [a1_curr_loc]]
+
+        a1_next_loc = get_location(path1, timestep+1)
+        a2_next_loc = get_location(path2, timestep+1)
+
+        # Check for edge constraint
+        if a1_curr_loc == a2_next_loc and a1_next_loc == a2_curr_loc:
+            return [timestep, [a1_curr_loc, a1_next_lo]]
+
+    return None
 
 
 def detect_collisions(paths):
@@ -22,7 +40,36 @@ def detect_collisions(paths):
     #           causing the collision, and the timestep at which the collision occurred.
     #           You should use your detect_collision function to find a collision between two robots.
 
-    pass
+    # Recursive funtion that checks one path at a time against the rest of the paths
+    collisions = []
+
+    # Base case for the recursion 
+    if len(paths) == 1:
+        return collisions
+
+    # Get last path agent number, then pop off path list temporarily
+    agent = len(paths)-1
+    path = paths.pop(-1)
+
+    # Iterate through the rest of the paths
+    for next_agent in range(len(paths)):
+        agent_dict = {'a1': agent, 'a2': next_agent}
+
+        path_collision = detect_collision(path, paths[next_agent])
+        if path_collision is not None:
+            agent_dict['timestep'] = path_collision[0]
+            agent_dict['loc'] =  path_collision[1]
+            collisions.append(agent_dict)
+    
+    # Recursively call detect collisions until base case
+    collisions += detect_collisions(paths)
+
+    # Add back removed path
+    paths.append(path)
+
+    # Return all collisions previous checked paths
+    return collisions
+
 
 
 def standard_splitting(collision):
