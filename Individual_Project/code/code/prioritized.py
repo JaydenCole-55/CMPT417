@@ -63,14 +63,11 @@ class PrioritizedPlanningSolver(object):
                                      'loc'      : [path[timestep], path[timestep-1]],
                                      'timestep' : timestep}]
 
-                # Add agent's finishing square as a constraint to all other agents (Task 2.3)
+                # Add finishing square as a constraint to all other agents (Task 2.3)
                 constraints += [{'agent'    : agent,
                                  'loc'      : path[-1],
                                  'timestep' : 0,          # Put the constraint into timestep 0 as no other constraints are applied into timestep 0 for an agent
-                                 'tafter'   : len(path)}] # Add addition information when this constraint comes into effect
-
-
-                
+                                 'tafter'   : len(path)}] # Add addition information when this constraint comes into effect      
 
             ##############################
 

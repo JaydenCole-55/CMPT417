@@ -164,6 +164,7 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     open_list = []
     closed_list = dict()
     earliest_goal_timestep = 0
+    latest_goal_timestep = 2 * ( len(my_map) )^2 # Upper bound on number of timesteps searched
     h_value = h_values[start_loc]
     constraint_table = build_constraint_table(constraints, agent) # Build constraint table
     root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 'timestep': 0} # Add timestep of 0 to root
@@ -171,6 +172,8 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list[(root['loc'], root['timestep'])] = root  # Make indexing of closed list the location and time step
     while len(open_list) > 0:
         curr = pop_node(open_list)
+        if curr['timestep'] > latest_goal_timestep: # Number of timesteps generated exceeds maximum number of timesteps permitted to be searched
+            break
         #############################
         # Task 1.4: Adjust the goal test condition to handle goal constraints --> Added function to check if the goal node was constrained in the future
         if curr['loc'] == goal_loc and not constrained_in_future(curr, constraint_table):
