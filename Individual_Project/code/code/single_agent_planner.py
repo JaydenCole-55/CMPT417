@@ -55,6 +55,10 @@ def build_constraint_table(constraints, agent):
     #               is_constrained function.
     constraint_table = []
 
+    # Table to temporarily hold constraint due to agents in their final square
+    indefinite_constraints = []
+    max_indefinite_constraint_timestep = 0
+
     for constraint in constraints:
         # Check if the constraint applies to this agent
         if agent != constraint['agent']:
@@ -64,11 +68,23 @@ def build_constraint_table(constraints, agent):
         if constraint['timestep'] >= len(constraint_table):
             constraint_table += [[]] * (constraint['timestep'] - len(constraint_table) + 1)
 
-        # Add agent ending constraints to timestep 0 along with info about when they come into effect
-        if constraint['timestep'] == 0:
-            constraint_table[0] = constraint_table[0] + [[constraint['loc'], constraint['tafter']]]
-        else: # Add every other constraint to the table to the timestep it applies to
-            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
+        # Negative timestep indicates this constraint extends indefinitely after abs(timestep)
+        if constraint['timestep'] < 0:
+            indefinite_constraints += [constraint]
+            if abs(constraint['timestep']) > max_indefinite_constraint_timestep:
+                max_indefinite_constraint_timestep = abs(constraint['timestep'])
+
+        # Add constraint to constraint table    
+        constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
+
+    # If the max indefinite constraint timestep is bigger than current table size, increase the table size
+    if max_indefinite_constraint_timestep >= len(constraint_table):
+            constraint_table += [[]] * (max_indefinite_constraint_timestep - len(constraint_table) + 1)
+
+    # Insert indefinite constraints from when they occur to the length of the table
+    for constraint in indefinite_constraints:
+        for i in range(abs(constraint['timestep']), len(constraint_table)):
+            constraint_table[i] = constraint_table[i] + [constraint['loc']]
 
     return constraint_table
 
@@ -98,15 +114,9 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     #               any given constraint. For efficiency the constraints are indexed in a constraint_table
     #               by time step, see build_constraint_table.
 
-    # Check if the next_loc at next_time is a finishing square for another agent (Task 2.3)
-    if len(constraint_table) > 0:
-        for constraint in constraint_table[0]:
-            if next_loc == constraint[0] and constraint[1] <= next_time:
-                return True
-
-    # Time step is larger than any constraint time step
+    # Check if this move interupts an agent in its final location
     if next_time >= len(constraint_table):
-        return False
+        return [next_loc] in constraint_table[-1]
 
     # Does the next location break a vertex constraint
     if [next_loc] in constraint_table[next_time]:
@@ -139,7 +149,7 @@ def constrained_in_future(node, constraint_table):
 
     # Check if the timestep is greater than greatest timestep of constraints
     if node['timestep'] >= len(constraint_table):
-        return False
+        return node['loc'] in constraint_table[-1]
 
     # Check for every timestep in the future if goal node is vertex constrained
     for i in range( node['timestep'], len(constraint_table) ):
