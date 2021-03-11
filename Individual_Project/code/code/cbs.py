@@ -28,7 +28,7 @@ def detect_collision(path1, path2):
 
         # Check for edge constraint
         if a1_curr_loc == a2_next_loc and a1_next_loc == a2_curr_loc:
-            return [timestep, [a1_curr_loc, a1_next_lo]]
+            return [timestep, [a1_curr_loc, a1_next_loc]]
 
     return None
 
@@ -82,7 +82,17 @@ def standard_splitting(collision):
     #                          specified timestep, and the second constraint prevents the second agent to traverse the
     #                          specified edge at the specified timestep
 
-    pass
+    # Detect if it is a vertex collision
+    if(len(collision['loc']) == 1):
+        return [ 
+            {'agent' : collision['a1'], 'loc' : collision['loc'], 'timestep' : collision['timestep']},
+            {'agent' : collision['a2'], 'loc' : collision['loc'], 'timestep' : collision['timestep']}
+        ]
+    else:
+        return [
+            {'agent' : collision['a1'], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep']},
+            {'agent' : collision['a2'], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep']}
+        ]
 
 
 def disjoint_splitting(collision):
@@ -97,6 +107,29 @@ def disjoint_splitting(collision):
     #           Choose the agent randomly
 
     pass
+
+
+#
+# Please insert this function into "cbs.py" before "class CBSSolver"
+# is defined.
+#
+
+def paths_violate_constraint(constraint, paths):
+    assert constraint['positive'] is True
+    rst = []
+    for i in range(len(paths)):
+        if i == constraint['agent']:
+            continue
+        curr = get_location(paths[i], constraint['timestep'])
+        prev = get_location(paths[i], constraint['timestep'] - 1)
+        if len(constraint['loc']) == 1:  # vertex constraint
+            if constraint['loc'][0] == curr:
+                rst.append(i)
+        else:  # edge constraint
+            if constraint['loc'][0] == prev or constraint['loc'][1] == curr \
+                    or constraint['loc'] == [curr, prev]:
+                rst.append(i)
+    return rst
 
 
 class CBSSolver(object):
@@ -135,6 +168,34 @@ class CBSSolver(object):
         self.num_of_expanded += 1
         return node
 
+    def display_node(self, node, expanded):
+        if(expanded):
+            print("\nExpanded node cost: {}".format(node['cost']))
+            print("Expanded node constraints: {}".format(node['constraints']))
+            print("Expanded node collisions: {}".format(node['collisions']))
+            print("Expanded node paths: {}\n".format(node['paths']))
+        else:
+            print("\nConstrained node cost: {}".format(node['cost']))
+            print("Constrained node constraints: {}".format(node['constraints']))
+            print("Constrained node collisions: {}".format(node['collisions']))
+            print("Constrained node paths: {}\n".format(node['paths']))
+
+    def create_new_node(self, parent, new_constraint):
+        new_node = { 'cost': 0,
+                    'constraints': [],
+                    'paths': [],
+                    'collisions': []}
+
+        for path in parent['paths']:
+            new_node['paths'].append(path)
+
+        for constraint in parent['constraints']:
+            new_node['constraints'].append(constraint)
+
+        new_node['constraints'] += [new_constraint]
+
+        return new_node
+
     def find_solution(self, disjoint=True):
         """ Finds paths for all agents from their start locations to their goal locations
 
@@ -164,11 +225,11 @@ class CBSSolver(object):
         self.push_node(root)
 
         # Task 3.1: Testing
-        print(root['collisions'])
+        #print(root['collisions'])
 
         # Task 3.2: Testing
-        for collision in root['collisions']:
-            print(standard_splitting(collision))
+        #for collision in root['collisions']:
+            #print(standard_splitting(collision))
 
         ##############################
         # Task 3.3: High-Level Search
@@ -179,9 +240,54 @@ class CBSSolver(object):
         #                standard_splitting function). Add a new child node to your open list for each constraint
         #           Ensure to create a copy of any objects that your child nodes might inherit
 
-        self.print_results(root)
-        return root['paths']
+        while(len(self.open_list) != 0):
+            next_node = self.pop_node()
 
+            #self.display_node(next_node, True)
+
+            if len(next_node['collisions']) == 0:
+                return next_node['paths']
+
+            collision = next_node['collisions'][-1]
+
+            #print(standard_splitting(collision))
+
+            constraints = standard_splitting(collision)
+
+            i = 1
+            for constraint in constraints:
+                # Create a new node with the new constaint
+
+                new_node = self.create_new_node(next_node, constraint)
+
+                # Get which agent is constrained
+                agent_constrained = constraint['agent']
+
+                # Determine the agent's new path
+                path = a_star(self.my_map, self.starts[agent_constrained], self.goals[agent_constrained], 
+                            self.heuristics[agent_constrained], agent_constrained, new_node['constraints'])
+                
+                # Path with no length, don't add it to lists
+                if path is None:
+                    continue
+
+                # Update new node's information based on new path
+                new_node['paths'][agent_constrained] = path
+                new_node['collisions'] = detect_collisions(new_node['paths'])
+                new_node['cost'] = get_sum_of_cost(new_node['paths'])
+
+                #print("Adding constrained node {} of {}".format(i, len(constraints)) )
+                #self.display_node(new_node, False)
+
+                i += 1
+
+                # Push the new node to the open list
+                self.push_node(new_node)
+
+
+        #self.print_results(root)
+        #return root['paths']
+        raise BaseException('No solutions')
 
     def print_results(self, node):
         print("\n Found a solution! \n")

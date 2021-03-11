@@ -55,7 +55,7 @@ def build_constraint_table(constraints, agent):
     #               is_constrained function.
     constraint_table = []
 
-    # Table to temporarily hold constraint due to agents in their final square
+    # Table to temporarily hold constraints due to agents in their final square
     indefinite_constraints = []
     max_indefinite_constraint_timestep = 0
 
@@ -77,9 +77,11 @@ def build_constraint_table(constraints, agent):
         # Add constraint to constraint table    
         constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
 
-    # If the max indefinite constraint timestep is bigger than current table size, increase the table size
+    # If the max indefinite constraint timestep is bigger than current table size, increase the table to fit them
     if max_indefinite_constraint_timestep >= len(constraint_table):
-            constraint_table += [[]] * (max_indefinite_constraint_timestep - len(constraint_table) + 1)
+        constraint_table += [[]] * (max_indefinite_constraint_timestep - len(constraint_table) + 1)
+    else:
+        constraint_table += [[]] # Stores indefinite constraints in extra row in the table
 
     # Insert indefinite constraints from when they occur to the length of the table
     for constraint in indefinite_constraints:
@@ -123,7 +125,7 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
         return True
 
     # Check for an edge constraint
-    if [curr_loc, next_loc] in constraint_table[next_time] or [next_loc, curr_loc] in constraint_table[next_time]:
+    if [curr_loc, next_loc] in constraint_table[next_time-1] or [next_loc, curr_loc] in constraint_table[next_time-1]:
         return True
 
     # No constraint for this move
@@ -174,7 +176,7 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     open_list = []
     closed_list = dict()
     earliest_goal_timestep = 0
-    latest_goal_timestep = 2 * ( len(my_map) )^2 # Upper bound on number of timesteps searched
+    latest_goal_timestep = 2 * ( len(my_map) )^4 # Upper bound on number of timesteps searched
     h_value = h_values[start_loc]
     constraint_table = build_constraint_table(constraints, agent) # Build constraint table
     root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 'timestep': 0} # Add timestep of 0 to root
@@ -190,7 +192,7 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
             return get_path(curr)
         for dir in range(5):
             child_loc = move(curr['loc'], dir)
-            if my_map[child_loc[0]][child_loc[1]]:
+            if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] >= len(my_map) or child_loc[1] >= len(my_map[0]) or my_map[child_loc[0]][child_loc[1]]:
                 continue
             child = {'loc': child_loc,
                     'g_val': curr['g_val'] + 1,
