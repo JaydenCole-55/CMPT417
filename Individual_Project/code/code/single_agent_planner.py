@@ -75,7 +75,7 @@ def build_constraint_table(constraints, agent):
                 max_indefinite_constraint_timestep = abs(constraint['timestep'])
 
         # Add constraint to constraint table    
-        constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [constraint['loc']]
+        constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], constraint['positive']]]
 
     # If the max indefinite constraint timestep is bigger than current table size, increase the table to fit them
     if max_indefinite_constraint_timestep >= len(constraint_table):
@@ -86,7 +86,7 @@ def build_constraint_table(constraints, agent):
     # Insert indefinite constraints from when they occur to the length of the table
     for constraint in indefinite_constraints:
         for i in range(abs(constraint['timestep']), len(constraint_table)):
-            constraint_table[i] = constraint_table[i] + [constraint['loc']]
+            constraint_table[i] = constraint_table[i] + [[constraint['loc'], constraint['positive']]]
 
     return constraint_table
 
@@ -118,14 +118,14 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
 
     # Check if this move interupts an agent in its final location
     if next_time >= len(constraint_table):
-        return [next_loc] in constraint_table[-1]
+        return [[next_loc], False] in constraint_table[-1]
 
-    # Does the next location break a vertex constraint
-    if [next_loc] in constraint_table[next_time]:
+    # Does the next location break a negative vertex constraint
+    if [[next_loc], False] in constraint_table[next_time]:
         return True
 
-    # Check for an edge constraint
-    if [curr_loc, next_loc] in constraint_table[next_time-1] or [next_loc, curr_loc] in constraint_table[next_time-1]:
+    # Check for a negative edge constraint
+    if [[(curr_loc), (next_loc)], False] in constraint_table[next_time-1] or [[(next_loc), (curr_loc)], False] in constraint_table[next_time-1]:
         return True
 
     # No constraint for this move
@@ -147,15 +147,15 @@ def compare_nodes(n1, n2):
 
 
 def constrained_in_future(node, constraint_table):
-    """ Return True if the node is in a constraint at some timestep in the future"""
+    """ Return True if the node is in a negative constraint at some timestep in the future"""
 
     # Check if the timestep is greater than greatest timestep of constraints
     if node['timestep'] >= len(constraint_table):
-        return node['loc'] in constraint_table[-1]
+        return [[node['loc']], False] in constraint_table[-1]
 
     # Check for every timestep in the future if goal node is vertex constrained
     for i in range( node['timestep'], len(constraint_table) ):
-        if [node['loc']] in constraint_table[i]:
+        if [[node['loc']], False] in constraint_table[i]:
             return True
 
     return False

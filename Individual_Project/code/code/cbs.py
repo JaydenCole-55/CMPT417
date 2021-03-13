@@ -85,13 +85,13 @@ def standard_splitting(collision):
     # Detect if it is a vertex collision
     if(len(collision['loc']) == 1):
         return [ 
-            {'agent' : collision['a1'], 'loc' : collision['loc'], 'timestep' : collision['timestep']},
-            {'agent' : collision['a2'], 'loc' : collision['loc'], 'timestep' : collision['timestep']}
+            {'agent' : collision['a1'], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision['a2'], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
         ]
     else:
         return [
-            {'agent' : collision['a1'], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep']},
-            {'agent' : collision['a2'], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep']}
+            {'agent' : collision['a1'], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision['a2'], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
         ]
 
 
@@ -105,8 +105,23 @@ def disjoint_splitting(collision):
     #                          specified timestep, and the second constraint prevents the same agent to traverse the
     #                          specified edge at the specified timestep
     #           Choose the agent randomly
+    agent = None
 
-    pass
+    if random.randint(0, 1):
+        agent = 'a1'
+    else:
+        agent = 'a2'
+
+    if(len(collision['loc']) == 1):
+        return [ 
+            {'agent' : collision[agent], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision[agent], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
+        ]
+    else:
+        return [
+            {'agent' : collision[agent], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision[agent], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
+        ]
 
 
 #
@@ -150,6 +165,8 @@ class CBSSolver(object):
         self.num_of_expanded = 0
         self.CPU_time = 0
 
+        self.goal_node = None
+
         self.open_list = []
 
         # compute heuristics for the low-level search
@@ -173,7 +190,7 @@ class CBSSolver(object):
             print("\nExpanded node cost: {}".format(node['cost']))
             print("Expanded node constraints: {}".format(node['constraints']))
             print("Expanded node collisions: {}".format(node['collisions']))
-            print("Expanded node paths: {}\n".format(node['paths']))
+            #print("Expanded node paths: {}\n".format(node['paths']))
         else:
             print("\nConstrained node cost: {}".format(node['cost']))
             print("Constrained node constraints: {}".format(node['constraints']))
@@ -240,19 +257,25 @@ class CBSSolver(object):
         #                standard_splitting function). Add a new child node to your open list for each constraint
         #           Ensure to create a copy of any objects that your child nodes might inherit
 
-        while(len(self.open_list) != 0):
+        while(len(self.open_list) > 0):
             next_node = self.pop_node()
 
-            #self.display_node(next_node, True)
+            self.display_node(next_node, True)
 
             if len(next_node['collisions']) == 0:
-                return next_node['paths']
+                self.goal_node = next_node
+                break
 
             collision = next_node['collisions'][-1]
 
-            #print(standard_splitting(collision))
+            constraints = []
 
-            constraints = standard_splitting(collision)
+            if disjoint:
+                #print(disjoint_splitting(collision))
+                constraints = disjoint_splitting(collision)
+            else:
+                #print(standard_splitting(collision))
+                constraints = standard_splitting(collision)
 
             i = 1
             for constraint in constraints:
@@ -284,10 +307,11 @@ class CBSSolver(object):
                 # Push the new node to the open list
                 self.push_node(new_node)
 
-
-        #self.print_results(root)
-        #return root['paths']
-        raise BaseException('No solutions')
+        if self.goal_node is not None:
+            self.print_results(self.goal_node)
+            return self.goal_node['paths']
+        else:
+            raise BaseException('No solutions')
 
     def print_results(self, node):
         print("\n Found a solution! \n")
