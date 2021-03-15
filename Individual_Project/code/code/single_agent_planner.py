@@ -55,27 +55,30 @@ def build_constraint_table(constraints, agent):
     #               is_constrained function.
     constraint_table = []
 
-    # Table to temporarily hold constraints due to agents in their final square
+    # Temporary table to hold constraints due to agents in their final square
     indefinite_constraints = []
     max_indefinite_constraint_timestep = 0
 
     for constraint in constraints:
         # Check if the constraint applies to this agent
-        if agent != constraint['agent']:
+        if (not constraint['positive'] and agent != constraint['agent']):
             continue
 
-        # Dynamically add more time step indicies if they have not been created yet 
+        # Dynamically add more time step indicies to the table if needed
         if constraint['timestep'] >= len(constraint_table):
             constraint_table += [[]] * (constraint['timestep'] - len(constraint_table) + 1)
 
-        # Negative timestep indicates this constraint extends indefinitely after abs(timestep)
+        # A negative timestep indicates this constraint extends indefinitely after abs(timestep), take care of these constraints last
         if constraint['timestep'] < 0:
             indefinite_constraints += [constraint]
             if abs(constraint['timestep']) > max_indefinite_constraint_timestep:
                 max_indefinite_constraint_timestep = abs(constraint['timestep'])
 
-        # Add constraint to constraint table    
-        constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], constraint['positive']]]
+        # Add constraint to constraint table, determine if it is a pos constraint for another agent or a constraint on itself
+        if constraint['positive'] and agent != constraint['agent']:
+            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], False]]
+        else:
+            constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], constraint['positive']]]
 
     # If the max indefinite constraint timestep is bigger than current table size, increase the table to fit them
     if max_indefinite_constraint_timestep >= len(constraint_table):
@@ -85,7 +88,7 @@ def build_constraint_table(constraints, agent):
 
     # Insert indefinite constraints from when they occur to the length of the table
     for constraint in indefinite_constraints:
-        for i in range(abs(constraint['timestep']), len(constraint_table)):
+        for i in range( abs(constraint['timestep']), len(constraint_table) ):
             constraint_table[i] = constraint_table[i] + [[constraint['loc'], constraint['positive']]]
 
     return constraint_table
@@ -110,6 +113,10 @@ def get_path(goal_node):
     return path
 
 
+def is_pos_constraint(constraint):
+    return constraint[1]
+
+
 def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     ##############################
     # Task 1.2/1.3: Check if a move from curr_loc to next_loc at time step next_time violates
@@ -120,12 +127,24 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table):
     if next_time >= len(constraint_table):
         return [[next_loc], False] in constraint_table[-1]
 
+    # Determine if there is a constraint on this move
+    is_pos_v_constraint = [[next_loc], True] in constraint_table[next_time]
+    is_pos_e_constraint = [[(curr_loc), (next_loc)], True] in constraint_table[next_time-1] or [[(next_loc), (curr_loc)], True] in constraint_table[next_time-1]
+    is_neg_v_constraint = [[next_loc], False] in constraint_table[next_time]
+    is_neg_e_constraint = [[(curr_loc), (next_loc)], False] in constraint_table[next_time-1] or [[(next_loc), (curr_loc)], False] in constraint_table[next_time-1]
+
+    if is_pos_v_constraint:
+        return is_neg_e_constraint # Check that a positive v constraint does not break a negative edge contraint
+
+    if is_pos_e_constraint:
+        return is_neg_v_constraint # Check that a poitive edge constraint does not break a negative vertex constraint
+
     # Does the next location break a negative vertex constraint
-    if [[next_loc], False] in constraint_table[next_time]:
+    if is_neg_v_constraint:
         return True
 
     # Check for a negative edge constraint
-    if [[(curr_loc), (next_loc)], False] in constraint_table[next_time-1] or [[(next_loc), (curr_loc)], False] in constraint_table[next_time-1]:
+    if is_neg_e_constraint:
         return True
 
     # No constraint for this move

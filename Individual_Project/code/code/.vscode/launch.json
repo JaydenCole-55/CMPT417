@@ -5,11 +5,299 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "Priority - 1_0",
             "type": "python",
             "request": "launch",
-            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual Project\\code\\code\\run_experiments.py",
-            "console": "integratedTerminal"
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp1.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_1.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_2",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_2.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_3.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_5a",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "custominstances/exp2_5a.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_5b",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "custominstances/exp2_5b.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "Priority - 2_5c",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "custominstances/exp2_5c.txt",
+                "--solver",
+                "Prioritized"
+            ]
+        },
+        {
+            "name": "CBS - 2.1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_1.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - 2.3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_3.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - 4",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp4.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - T1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - T2",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - T3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_3.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - Batch Run",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_*",
+                "--solver",
+                "CBS",
+                "--batch"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - 2.1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp2_1.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T2",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T24",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_24.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - Batch Run",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_*",
+                "--disjoint",
+                "--solver",
+                "CBS",
+                "--batch"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - 4",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp4.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "Run independant, exp0",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Individual_Project\\code\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp0.txt",
+                "--solver",
+                "Independent"
+            ]
         }
     ]
 }

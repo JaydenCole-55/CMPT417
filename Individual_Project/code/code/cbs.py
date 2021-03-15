@@ -43,15 +43,15 @@ def detect_collisions(paths):
     # Recursive funtion that checks one path at a time against the rest of the paths
     collisions = []
 
-    # Base case for the recursion 
+    # Base case for the recursion, no collisions can happen on one path
     if len(paths) == 1:
         return collisions
 
-    # Get last path agent number, then pop off path list temporarily
+    # Get last path agent number, then pop off its path from the path list temporarily
     agent = len(paths)-1
     path = paths.pop(-1)
 
-    # Iterate through the rest of the paths
+    # Iterate through the rest of the paths detecting any collisions with this path
     for next_agent in range(len(paths)):
         agent_dict = {'a1': agent, 'a2': next_agent}
 
@@ -61,7 +61,7 @@ def detect_collisions(paths):
             agent_dict['loc'] =  path_collision[1]
             collisions.append(agent_dict)
     
-    # Recursively call detect collisions until base case
+    # Recursively call detect collisions with one less path until base case
     collisions += detect_collisions(paths)
 
     # Add back removed path
@@ -69,7 +69,6 @@ def detect_collisions(paths):
 
     # Return all collisions previous checked paths
     return collisions
-
 
 
 def standard_splitting(collision):
@@ -105,7 +104,7 @@ def disjoint_splitting(collision):
     #                          specified timestep, and the second constraint prevents the same agent to traverse the
     #                          specified edge at the specified timestep
     #           Choose the agent randomly
-    agent = None
+    agent = 'a1'
 
     if random.randint(0, 1):
         agent = 'a1'
@@ -128,21 +127,21 @@ def disjoint_splitting(collision):
 # Please insert this function into "cbs.py" before "class CBSSolver"
 # is defined.
 #
-
 def paths_violate_constraint(constraint, paths):
+    ''' Determine if any paths violate given constraint '''
     assert constraint['positive'] is True
     rst = []
     for i in range(len(paths)):
         if i == constraint['agent']:
             continue
         curr = get_location(paths[i], constraint['timestep'])
-        prev = get_location(paths[i], constraint['timestep'] - 1)
+        next = get_location(paths[i], constraint['timestep'] + 1)
         if len(constraint['loc']) == 1:  # vertex constraint
             if constraint['loc'][0] == curr:
                 rst.append(i)
         else:  # edge constraint
-            if constraint['loc'][0] == prev or constraint['loc'][1] == curr \
-                    or constraint['loc'] == [curr, prev]:
+            if constraint['loc'][0] == curr or constraint['loc'][1] == next \
+                    or constraint['loc'] == [next, curr]:
                 rst.append(i)
     return rst
 
@@ -186,11 +185,12 @@ class CBSSolver(object):
         return node
 
     def display_node(self, node, expanded):
+        pass
         if(expanded):
             print("\nExpanded node cost: {}".format(node['cost']))
             print("Expanded node constraints: {}".format(node['constraints']))
             print("Expanded node collisions: {}".format(node['collisions']))
-            #print("Expanded node paths: {}\n".format(node['paths']))
+            print("Expanded node paths: {}\n".format(node['paths']))
         else:
             print("\nConstrained node cost: {}".format(node['cost']))
             print("Constrained node constraints: {}".format(node['constraints']))
@@ -205,6 +205,9 @@ class CBSSolver(object):
 
         for path in parent['paths']:
             new_node['paths'].append(path)
+
+        #if new_constraint in parent['constraints']:
+        #    raise BaseException("Constraint " + str(new_constraint) + " is already constrained in parent" )
 
         for constraint in parent['constraints']:
             new_node['constraints'].append(constraint)
@@ -260,49 +263,57 @@ class CBSSolver(object):
         while(len(self.open_list) > 0):
             next_node = self.pop_node()
 
-            self.display_node(next_node, True)
-
+            # See if this is a goal node
             if len(next_node['collisions']) == 0:
                 self.goal_node = next_node
                 break
 
+            # Pick a collision from the collision list to solve
             collision = next_node['collisions'][-1]
 
             constraints = []
 
+            # Determine what splitting to use
             if disjoint:
-                #print(disjoint_splitting(collision))
                 constraints = disjoint_splitting(collision)
             else:
-                #print(standard_splitting(collision))
                 constraints = standard_splitting(collision)
 
-            i = 1
             for constraint in constraints:
-                # Create a new node with the new constaint
-
+                # Create a new node with n additional new constraint
                 new_node = self.create_new_node(next_node, constraint)
 
-                # Get which agent is constrained
-                agent_constrained = constraint['agent']
+                # Agent who's path is contrained needs to get a new path
+                agents_constrained = [constraint['agent']]
 
-                # Determine the agent's new path
-                path = a_star(self.my_map, self.starts[agent_constrained], self.goals[agent_constrained], 
+                # For disjoint splitting calculate new paths for all agents whos path violates the new positive constraint
+                if disjoint and constraint['positive']:
+                    agents_constrained += paths_violate_constraint(constraint, new_node['paths'])
+
+                # Pretend that all the paths will be calculated for all agents
+                paths_found_for_all_agents = True
+
+                # Ensure all agents have a path in this new node, else prune
+                for agent_constrained in agents_constrained:
+                    # Determine this agent's new path
+                    path = a_star(self.my_map, self.starts[agent_constrained], self.goals[agent_constrained],
                             self.heuristics[agent_constrained], agent_constrained, new_node['constraints'])
                 
-                # Path with no length, don't add it to lists
-                if path is None:
+                    # Path with no length, cannot find a solution for these constraints, prune this node
+                    if path is None:
+                        paths_found_for_all_agents = False
+                        break
+
+                    # Replace old path with agents new path
+                    new_node['paths'][agent_constrained] = path
+
+                # Must have a path for all agents, prune this node
+                if not paths_found_for_all_agents:
                     continue
 
-                # Update new node's information based on new path
-                new_node['paths'][agent_constrained] = path
+                # Update new node's information based on new path(s)
                 new_node['collisions'] = detect_collisions(new_node['paths'])
                 new_node['cost'] = get_sum_of_cost(new_node['paths'])
-
-                #print("Adding constrained node {} of {}".format(i, len(constraints)) )
-                #self.display_node(new_node, False)
-
-                i += 1
 
                 # Push the new node to the open list
                 self.push_node(new_node)

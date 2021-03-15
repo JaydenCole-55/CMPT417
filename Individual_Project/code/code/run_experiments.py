@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import argparse
 import glob
+import time
 from pathlib import Path
 from cbs import CBSSolver
 from independent import IndependentSolver
@@ -85,6 +86,8 @@ if __name__ == '__main__':
 
     result_file = open("results.csv", "w", buffering=1)
 
+    start_time = time.time()
+
     for file in sorted(glob.glob(args.instance)):
 
         print("***Import an instance***")
@@ -109,10 +112,17 @@ if __name__ == '__main__':
         cost = get_sum_of_cost(paths)
         result_file.write("{},{}\n".format(file, cost))
 
+        calculation_time = time.time() - start_time
 
         if not args.batch:
             print("***Test paths on a simulation***")
+            print("\nTotal time: " + str(calculation_time) + "s")
             animation = Animation(my_map, starts, goals, paths)
             # animation.save("output.mp4", 1.0)
             animation.show()
+
+    if not args.batch:
+        total_time = time.time() - start_time
+        print(total_time)
+
     result_file.close()
