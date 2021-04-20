@@ -227,13 +227,13 @@ def standard_splitting(collision):
     # Detect if it is a vertex collision
     if(len(collision['loc']) == 1):
         return [ 
-            {'agent' : collision['a1'], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision['a2'], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
+            {'agent' : collision['a1'], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision['a2'], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
         ]
     else:
         return [
-            {'agent' : collision['a1'], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision['a2'], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
+            {'agent' : collision['a1'], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision['a2'], 'metaAgent' : [], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
         ]
 
 
@@ -256,13 +256,13 @@ def disjoint_splitting(collision):
 
     if(len(collision['loc']) == 1):
         return [ 
-            {'agent' : collision[agent], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision[agent], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
         ]
     else:
         return [
-            {'agent' : collision[agent], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision[agent], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
         ]
 
 
@@ -525,8 +525,11 @@ class MA_CBSSolver(object):
                 # Create a new node with an additional new constraint
                 new_node = self.create_new_node(next_node, constraint)
 
+                # Add the meta agent to the constraint
+                constraint['metaAgent'] = which_meta_agent(constraint['agent'], new_node['metaAgentGroups'])
+
                 # Meta-Agent who's path is contrained needs to get a new path
-                MA_constrained = [ which_meta_agent(constraint['agent'], new_node['metaAgentGroups']) ]
+                MA_constrained = [ constraint['metaAgent'] ]
 
                 # For disjoint splitting calculate new paths for all agents whos path violates the new positive constraint
                 if disjoint and constraint['positive']:
