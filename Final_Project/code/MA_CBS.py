@@ -170,8 +170,8 @@ def combine_constraints(MA1, MA2, MA_groups, constraints):
     # Combine the constraints that apply to agents in MA2 to MA1
     for constraint in constraints:
         # If the constraint applies to MA2, make it now apply to MA1
-        if constraint['agent'] == MA2:
-            constraint['agent'] = MA1
+        if constraint['agents'] == MA2:
+            constraint['agents'] = MA1
 
     return constraints
 
@@ -227,13 +227,13 @@ def standard_splitting(collision):
     # Detect if it is a vertex collision
     if(len(collision['loc']) == 1):
         return [ 
-            {'agent' : collision['a1'], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision['a2'], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
+            {'agents' : [collision['a1']], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agents' : [collision['a2']], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
         ]
     else:
         return [
-            {'agent' : collision['a1'], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision['a2'], 'metaAgent' : [], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
+            {'agents' : [collision['a1']], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agents' : [collision['a2']], 'metaAgent' : [], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
         ]
 
 
@@ -256,13 +256,13 @@ def disjoint_splitting(collision):
 
     if(len(collision['loc']) == 1):
         return [ 
-            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
         ]
     else:
         return [
-            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agent' : collision[agent], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
         ]
 
 
@@ -384,16 +384,19 @@ class MA_CBSSolver(object):
         # Determine which constraints apply to this MA for the lower level solver to use
         MA_constraints = []
         for constraint in constraints:
-            if constraint['agent'] in MA:
-                # Convert the upper agent number to the lower agent number
-                LL_agent_num = LL_agent_list.index( constraint['agent'] )
+            if constraint['metaAgent'] == which_meta_agent(MA[0], metaAgentGroups):
+                
+                # Convert the upper solver agent numbers to the lower solver agent numbers for the constraint
+                LL_constrained_agents = []
+                for agent in constraint['agents']:
+                    LL_constrained_agents.append( LL_agent_list.index( agent ) )
 
-                constraint['agent'] = LL_agent_num 
+                constraint['agents'] = LL_constrained_agents
 
-                # Now add the updated agent number into a new constraint
+                # Now add the updated constraint to those passed to the low level
                 MA_constraints.insert(0, constraint)
 
-        # Calculate the new merge bound if this was called from a merge call
+        # Calculate the new merge bound if this was called from a merge agents call
         if(merging):
             LL_mergeBound = self.mergeBound + 1
         else:
@@ -405,9 +408,12 @@ class MA_CBSSolver(object):
 
         # Convert the constraint LL agent numbers to upper constraint numbers
         for constraint in MA_constraints:
-            H_agent_num = LL_agent_list[ constraint['agent'] ]
+            # Convert the lower solver agent numbers to the upper solver agent numbers for the constraint
+                H_constrained_agents = []
+                for agent in constraint['agents']:
+                    H_constrained_agents.append( LL_agent_list[agent] )
 
-            constraint['agent'] = H_agent_num
+                constraint['agents'] = H_constrained_agents
 
         # Put new paths into meta agent, else prune the node if no path was found
         i = len(LL_paths)-1
@@ -526,7 +532,7 @@ class MA_CBSSolver(object):
                 new_node = self.create_new_node(next_node, constraint)
 
                 # Add the meta agent to the constraint
-                constraint['metaAgent'] = which_meta_agent(constraint['agent'], new_node['metaAgentGroups'])
+                constraint['metaAgent'] = which_meta_agent(constraint['agents'][0], new_node['metaAgentGroups'])
 
                 # Meta-Agent who's path is contrained needs to get a new path
                 MA_constrained = [ constraint['metaAgent'] ]

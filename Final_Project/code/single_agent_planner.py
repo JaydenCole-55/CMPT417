@@ -61,7 +61,7 @@ def build_constraint_table(constraints, agent):
 
     for constraint in constraints:
         # Check if the constraint applies to this agent
-        if (not constraint['positive'] and agent != constraint['agent']):
+        if (not constraint['positive'] and agent not in constraint['agents']):
             continue
 
         # Dynamically add more time step indicies to the table if needed
@@ -75,7 +75,7 @@ def build_constraint_table(constraints, agent):
                 max_indefinite_constraint_timestep = abs(constraint['timestep'])
 
         # Add constraint to constraint table, determine if it is a pos constraint for another agent or a constraint on itself
-        if constraint['positive'] and agent != constraint['agent']:
+        if constraint['positive'] and agent not in constraint['agents']:
             constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], False]]
         else:
             constraint_table[constraint['timestep']] = constraint_table[constraint['timestep']] + [[constraint['loc'], constraint['positive']]]
