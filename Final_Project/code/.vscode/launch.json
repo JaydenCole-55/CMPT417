@@ -1,0 +1,207 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CBS - T1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - T2",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - T3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_3.txt",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS - Batch Run",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_*",
+                "--solver",
+                "CBS",
+                "--batch"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T2",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - T3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--disjoint",
+                "--solver",
+                "CBS"
+            ]
+        },
+        {
+            "name": "CBS Disjoint - Batch Run",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_*",
+                "--disjoint",
+                "--solver",
+                "CBS",
+                "--batch"
+            ]
+        },
+        {
+            "name": "MA-CBS - Exp1 - NC3",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/exp1.txt",
+                "--solver",
+                "MA_CBS",
+                "--MA_numConflicts",
+                "3",
+            ]
+        },
+        {
+            "name": "MA-CBS - Batch - NC1000000",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_*",
+                "--solver",
+                "MA_CBS",
+                "--MA_numConflicts",
+                "1000000",
+                "--batch"
+            ]
+        },
+        {
+            "name": "MA-CBS - T1 - NC1",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--solver",
+                "MA_CBS"
+            ]
+        },
+        {
+            "name": "MA-CBS - T1 - NC100",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_1.txt",
+                "--solver",
+                "MA_CBS",
+                "--MA_numConflicts",
+                "100"
+            ]
+        },
+        {
+            "name": "MA-CBS - T2 - NC100",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_2.txt",
+                "--solver",
+                "MA_CBS",
+                "--MA_numConflicts",
+                "100"
+            ]
+        },
+        {
+            "name": "MA-CBS - T15 - NC100",
+            "type": "python",
+            "request": "launch",
+            "program": "C:\\Users\\Jayde\\Documents\\School\\temp\\CMPT417\\Final_Project\\code\\run_experiments.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--instance",
+                "instances/test_15.txt",
+                "--solver",
+                "MA_CBS",
+                "--MA_numConflicts",
+                "100"
+            ]
+        },
+    ]
+}
