@@ -196,7 +196,14 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     closed_list = dict()
     earliest_goal_timestep = 0
     latest_goal_timestep = 2 * ( len(my_map) )^4 # Upper bound on number of timesteps searched
-    h_value = h_values[start_loc]
+
+    # It is impossible to find a heuristic value for a start and goal that are separated completely by obstacles,
+    # this try catch statement catches this and returns no solution
+    try:
+        h_value = h_values[start_loc]
+    except:
+        return None
+    
     constraint_table = build_constraint_table(constraints, agent) # Build constraint table
     root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None, 'timestep': 0} # Add timestep of 0 to root
     push_node(open_list, root)

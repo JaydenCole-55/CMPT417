@@ -82,59 +82,87 @@ if __name__ == '__main__':
     parser.add_argument('--solver', type=str, default=SOLVER,
                         help='The solver to use (one of: {CBS,Independent,Prioritized,MACBS}), defaults to ' + str(SOLVER))
     parser.add_argument('--MA_numConflicts', type=int, default=1,
-                        help='Number of conflicts for MACBS before merging')
+                        help='Number of conflicts for MA-CBS before merging')
 
     args = parser.parse_args()
 
     zero_depth = 0
 
-    if args.solver == "CBS":
-        result_file = open("CBS_results.csv", "w", buffering=1)
-    elif args.solver == "MA_CBS":
-        result_file = open("MA_CBS_results.csv", "w", buffering=1)
+    if args.MA_numConflicts == 1:
+        merge_bounds = [1]
+        merge_bound_incr_type = [3]
+    elif args.MA_numConflicts == 5:
+        merge_bounds = [5]
+        merge_bound_incr_type = [1, 2, 3, 4, 5]
+    elif args.MA_numConflicts == 20:
+        merge_bounds = [20]
+        merge_bound_incr_type = [1, 2, 3, 4, 5]
+    elif args.MA_numConflicts == 10:
+        merge_bounds = [10]
+        merge_bound_incr_type = [1, 2, 3, 4, 5]
     else:
-        result_file = open("results.csv", "w", buffering=1)
+        merge_bounds = [100]
+        merge_bound_incr_type = [1]
 
-    start_time = time.time()
+    # Create sequential running instances
+    for merge_bound in merge_bounds:
+        for merge_bound_incr in merge_bound_incr_type:
 
-    for file in sorted(glob.glob(args.instance)):
+            if args.solver == "CBS":
+                result_file = open("CBS_results.csv", "w", buffering=1)
+            elif args.solver == "MA_CBS":
+                result_file = open("MA_CBS_results_MB" + str(merge_bound) + "_incrType" + str(merge_bound_incr) + ".csv", "w", buffering=1)
+            else:
+                result_file = open("results.csv", "w", buffering=1)
 
-        file_start_time = time.time()
+            start_time = time.time()
 
-        print("***Import an instance***")
-        my_map, starts, goals = import_mapf_instance(file)
-        print_mapf_instance(my_map, starts, goals)
+            for file in sorted(glob.glob(args.instance)):
 
-        if args.solver == "CBS":
-            print("***Run CBS***")
-            cbs = CBSSolver(my_map, starts, goals)
-            paths = cbs.find_solution(args.disjoint)
-        elif args.solver == "Independent":
-            print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
-            paths = solver.find_solution()
-        elif args.solver == "Prioritized":
-            print("***Run Prioritized***")
-            solver = PrioritizedPlanningSolver(my_map, starts, goals)
-            paths = solver.find_solution()
-        elif args.solver == "MA_CBS":
-            print("***Run Meta-Agent CBS***")
-            MAcbs = MA_CBSSolver(my_map, starts, goals, args.MA_numConflicts)
-            paths = MAcbs.find_solution(args.disjoint)
-        else:
-            raise RuntimeError("Unknown solver!")
+                file_start_time = time.time()
 
-        cost = get_sum_of_cost(paths)
-        file_total_time = time.time() - file_start_time
-        result_file.write("{},{},{}\n".format(file, cost, file_total_time))
-        print("Solution found! Total sum-of-costs = {}\n".format(cost))
+                print("***Import an instance***")
+                my_map, starts, goals = import_mapf_instance(file)
+                print_mapf_instance(my_map, starts, goals)
 
-        if not args.batch:
-            print("***Test paths on a simulation***")
-            print("\nTotal time: " + str(file_total_time) + "s")
-            animation = Animation(my_map, starts, goals, paths)
-            # animation.save("output.mp4", 1.0)
-            animation.show()
+                if args.solver == "CBS":
+                    print("***Run CBS***")
+                    cbs = CBSSolver(my_map, starts, goals)
+                    paths = cbs.find_solution(args.disjoint)
+                elif args.solver == "Independent":
+                    print("***Run Independent***")
+                    solver = IndependentSolver(my_map, starts, goals)
+                    paths = solver.find_solution()
+                elif args.solver == "Prioritized":
+                    print("***Run Prioritized***")
+                    solver = PrioritizedPlanningSolver(my_map, starts, goals)
+                    paths = solver.find_solution()
+                elif args.solver == "MA_CBS":
+                    print("***Run Meta-Agent CBS***")
+                    try:
+                        MAcbs = MA_CBSSolver(my_map, starts, goals, merge_bound, zero_depth, file_start_time, merge_bound_incr)
+                        paths = MAcbs.find_solution(args.disjoint)
+                    except:
+                        paths = None
+                else:
+                    raise RuntimeError("Unknown solver!")
+
+                if paths is not None:
+                    cost = get_sum_of_cost(paths)
+
+                file_total_time = time.time() - file_start_time
+
+                if paths is not None:
+                    result_file.write("{},{},{}\n".format(file, cost, file_total_time))
+                else:
+                    result_file.write("{},{},{}\n".format(file, -1, file_total_time))
+
+                if not args.batch:
+                    print("***Test paths on a simulation***")
+                    print("\nTotal time: " + str(file_total_time) + "s")
+                    animation = Animation(my_map, starts, goals, paths)
+                    # animation.save("output.mp4", 1.0)
+                    animation.show()
 
     if not args.batch:
         total_time = time.time() - start_time

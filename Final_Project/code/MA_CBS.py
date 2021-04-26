@@ -1,8 +1,10 @@
 import time as timer
 import heapq
 import random
+import copy
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
 
+TIME_LIMIT = 20
 
 def detect_first_collision(path1, path2):
     ##############################
@@ -57,8 +59,8 @@ def detect_collisions(paths, metaAgentGroups):
         MA1 = which_meta_agent(agent, metaAgentGroups)
         MA2 = which_meta_agent(next_agent, metaAgentGroups)
 
-        # Store the collision as a collision of their meta agents
-        agent_dict = {'a1': MA1, 'a2': MA2}
+        # Store the collision as a collision of the agents
+        agent_dict = {'a1': agent, 'a2': next_agent}
 
         # Find if there is a collision
         path_collision = detect_first_collision(path, paths[next_agent])
@@ -68,7 +70,7 @@ def detect_collisions(paths, metaAgentGroups):
             agent_dict['timestep'] = path_collision[0]
             agent_dict['loc'] =  path_collision[1]
             collisions.append(agent_dict)
-        # Collisions should not happen within a Meta agent
+        # Collisions should not happen within a Meta agent, otherwise this solver is not complete and optimal
         elif (MA1 == MA2) and (path_collision is not None):
             raise(ValueError)
     
@@ -151,14 +153,14 @@ def should_merge(a1, a2, collisionMatrix, mergeBound):
 
 def which_meta_agent(agent, metaAgentGroups):
     ###############################
-    # Finds which meta agent group an agent belongs to
+    # Finds which meta agent group an agent belongs to, else returns None
 
     for meta_agent in range( len(metaAgentGroups) ):
         if agent in metaAgentGroups[meta_agent]:
             return meta_agent
 
     # Agent is not in a meta agent, this should be impossible. Throw error
-    raise(ValueError)
+    return None
 
 
 def combine_constraints(MA1, MA2, MA_groups, constraints):
@@ -167,30 +169,59 @@ def combine_constraints(MA1, MA2, MA_groups, constraints):
     #   Determine if the constraints are internal constraints (beteween these two meta agents), 
     #   or external constraints (between one of these agents and another agent)
 
+    internal_constraints = []
+
     # Combine the constraints that apply to agents in MA2 to MA1
     for constraint in constraints:
-        # If the constraint applies to MA2, make it now apply to MA1
-        if constraint['agents'] == MA2:
-            constraint['agents'] = MA1
+
+        # Does the constraint apply to the mergeing metaagents?
+        if constraint['metaAgent'] != MA1 and constraint['metaAgent'] != MA2:
+            continue
+        
+        constraint_removed = False
+
+        # Find and remove internal constraints based on which agents caused the constraint
+        for agent in constraint['otherAgents']:
+            MA_of_collision = which_meta_agent(agent, MA_groups)
+
+            # If the collided meta agent was not found, this is an external constraint from a higher up recursive call
+            if MA_of_collision is None:
+                break
+
+            if MA_of_collision == MA2 or MA_of_collision == MA1:
+                # This is an internal constraint, must remove it
+                internal_constraints.insert(0, constraint)
+                constraint_removed = True
+                break
+
+        if constraint_removed:
+            continue
+
+        # If the external constraint applies to MA2, make it now apply to MA1
+        if constraint['metaAgent'] == MA2:
+            constraint['metaAgent'] = MA1
+
+    for constraint in internal_constraints:
+        constraints.remove(constraint)
 
     return constraints
 
 
-def merge(MA1, MA2, MA_groups, node_contraints):
+def merge(minMA, maxMA, MA_groups):
     ###############################
     # Merge two meta agents into one meta agent
 
-    # Combine the contraints of the two meta-agents
-    node_constraints = combine_constraints(MA1, MA2, MA_groups, node_contraints)
+    # First create copy of MA_groups
+    merged_groups = copy.deepcopy(MA_groups)
 
     # Combine the two meta agents into one
-    MA_groups[MA1] += MA_groups[MA2]
+    merged_groups[minMA] += merged_groups[maxMA]
 
     # Clear the second meta agent group
-    MA_groups.pop(MA2)
+    merged_groups.pop(maxMA)
 
     # Return the updated group and contraints
-    return [ MA_groups, node_contraints ]
+    return merged_groups
 
 
 def path_violates_constraint(constraint, paths):
@@ -207,6 +238,16 @@ def path_violates_constraint(constraint, paths):
         if constraint['loc'] == [next, curr] or constraint['loc'] == [curr, next]:
             return True
     return False
+
+
+def update_constraints(node_constraints, MA1, MA2):
+    # Take all contraints that apply to MA2 and apply them to MA1
+    for constraint in node_constraints:
+        if constraint['metaAgent'] == MA2:
+            constraint['metaAgent'] = MA1
+
+    return node_constraints
+
 
 #################################################
 #
@@ -227,13 +268,26 @@ def standard_splitting(collision):
     # Detect if it is a vertex collision
     if(len(collision['loc']) == 1):
         return [ 
-            {'agents' : [collision['a1']], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agents' : [collision['a2']], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False}
+            {
+                'agents' : [collision['a1']],
+                'metaAgent' : [],
+                'loc' : collision['loc'],
+                'timestep' : collision['timestep'],
+                'positive' : False,
+                'otherAgents' : [collision['a2']]
+            },
+            {   'agents' : [collision['a2']],
+                'metaAgent' : [],
+                'loc' : collision['loc'],
+                'timestep' : collision['timestep'],
+                'positive' : False,
+                'otherAgents' : [collision['a1']]
+            }
         ]
     else:
         return [
-            {'agents' : [collision['a1']], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agents' : [collision['a2']], 'metaAgent' : [], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False}
+            {'agents' : [collision['a1']], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False, 'otherAgents' : [collision['a2']]},
+            {'agents' : [collision['a2']], 'metaAgent' : [], 'loc' : [ collision['loc'][1], collision['loc'][0] ], 'timestep' : collision['timestep'], 'positive' : False, 'otherAgents' : [collision['a1']]}
         ]
 
 
@@ -256,23 +310,24 @@ def disjoint_splitting(collision):
 
     if(len(collision['loc']) == 1):
         return [ 
-            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : False, 'otherAgents' : [collision['a2']]},
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : collision['loc'], 'timestep' : collision['timestep'], 'positive' : True, 'otherAgents' : [collision['a1']]}
         ]
     else:
         return [
-            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False},
-            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True}
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : False, 'otherAgents' : [collision['a2']]},
+            {'agents' : [collision[agent]], 'metaAgent' : [], 'loc' : [ collision['loc'][0], collision['loc'][1] ], 'timestep' : collision['timestep'], 'positive' : True, 'otherAgents' : [collision['a1']]}
         ]
 
 
+#################################################
 #
-# Please insert this function into "cbs.py" before "class MA_CBSSolver"
-# is defined.
+# NODE SANITY CHECK FUNCTIONS
 #
+#################################################
 def disjoint_paths_violate_constraint(constraint, paths):
     ''' Determine if any paths violate given constraint '''
-    #assert constraint['positive'] is True
+    assert constraint['positive'] is True
     rst = []
     for i in range(len(paths)):
         if i == constraint['agent']:
@@ -289,14 +344,49 @@ def disjoint_paths_violate_constraint(constraint, paths):
     return rst
 
 
+def ensure_dif_paths(node):
+    num_paths = len(node['paths'])
+    j = 0
+    while j < num_paths:
+        k = j+1
+        while k < num_paths:
+            if node['paths'][j][0] == node['paths'][k][0] or node['paths'][j][-1] == node['paths'][k][-1]:
+                raise Exception # Check how the paths are the same start and goal locations here
+            k+=1
+        j+=1
+
+
+def ensure_no_duplicate_agents(node):
+    # Detect that there is the correct number of agents in the meta agent list
+    list_of_agents = []
+    for MA in node['metaAgentGroups']:
+        for agent in MA:
+            list_of_agents.append(agent)
+
+    # Compare the sizes of the total agents in a meta agent to the number of agents for the solver
+    if len(list_of_agents) != len(node['paths']):
+        raise Exception
+
+
+def ensure_no_collisions_in_MA(node):
+    detect_collisions(node['paths'], node['metaAgentGroups'])
+
+#################################################
+#
+# SOLVER CLASS
+#
+#################################################
 class MA_CBSSolver(object):
     """The high-level search of MACBS."""
 
-    def __init__(self, my_map, starts, goals, mergeBound=1, depth=0):
+    def __init__(self, my_map, starts, goals, mergeBound=1, depth=0, file_start_time=0, merge_bound_incr=1):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
+
+        self.start_time = file_start_time
+        self.merge_bound_incr = merge_bound_incr
 
         self.my_map = my_map
         self.starts = starts
@@ -352,77 +442,115 @@ class MA_CBSSolver(object):
                     'metaAgentGroups': []
                     }
 
-        for path in parent['paths']:
-            new_node['paths'].append(path)
+        new_node['paths'] = copy.deepcopy(parent['paths'])
 
-        for constraint in parent['constraints']:
-            new_node['constraints'].append(constraint)
+        new_node['constraints'] = copy.deepcopy(parent['constraints'])
 
         new_node['constraints'] += [new_constraint]
 
-        for MA_G in parent['metaAgentGroups']:
-            new_node['metaAgentGroups'].append(MA_G)
+        new_node['metaAgentGroups'] = copy.deepcopy(parent['metaAgentGroups'])
 
         return new_node
 
-    def lower_level_solver(self, MA, node, disjoint, merging):
+    def ensure_path_ends_match_goals(self, node):
+        for agent in range(self.num_of_agents):
+            assert(node['paths'][agent][0] == self.starts[agent])
+            assert(node['paths'][agent][-1] == self.goals[agent])
+
+    def lower_level_solver(self, MA, node, disjoint, merging, merge_bound_incr):
         """ Calls MA_CBS on a meta Agent to solve
             all paths in that meta agent
         """
         metaAgentGroups = node['metaAgentGroups']
         constraints = node['constraints']
 
+        ensure_dif_paths(node)
+        ensure_no_duplicate_agents(node)
+
         # Determine the start and goal locations of the agents in the Meta Agent
         MA_starts = []
         MA_goals = []
         LL_agent_list = [] # List to keep track of which agent numbers in the lower level correspond to agent numbers in the upper level
-        for agent in MA:
-            MA_starts.insert(0, self.starts[agent]) 
-            MA_goals.insert(0, self.goals[agent])
-            LL_agent_list.insert(0, agent)
+        
+        # Get all agents in the MA list that need to have paths recalculated
+        for meta_agent in MA:
+            agent_list = metaAgentGroups[meta_agent]
+            for agent in agent_list:
+                MA_starts.append(self.starts[agent]) 
+                MA_goals.append(self.goals[agent])
+                LL_agent_list.append(agent)
 
-        # Determine which constraints apply to this MA for the lower level solver to use
+        ensure_dif_paths(node)
+        ensure_no_duplicate_agents(node)
+
+        # Determine which constraints apply to these MA for the lower level solver to use
         MA_constraints = []
         for constraint in constraints:
-            if constraint['metaAgent'] == which_meta_agent(MA[0], metaAgentGroups):
+            # Copy constraint to a new constraint container
+            constraint_copy = copy.deepcopy(constraint)
+
+            if constraint_copy['metaAgent'] in MA:
                 
                 # Convert the upper solver agent numbers to the lower solver agent numbers for the constraint
                 LL_constrained_agents = []
-                for agent in constraint['agents']:
+                for agent in constraint_copy['agents']:
                     LL_constrained_agents.append( LL_agent_list.index( agent ) )
 
-                constraint['agents'] = LL_constrained_agents
+                constraint_copy['agents'] = LL_constrained_agents
 
                 # Now add the updated constraint to those passed to the low level
-                MA_constraints.insert(0, constraint)
+                MA_constraints.append(constraint_copy)
+
+        ensure_dif_paths(node)
+        ensure_no_duplicate_agents(node)
 
         # Calculate the new merge bound if this was called from a merge agents call
         if(merging):
-            LL_mergeBound = self.mergeBound + 1
+            if merge_bound_incr == 1:
+                LL_mergeBound = self.mergeBound + 1
+            elif merge_bound_incr == 2:
+                LL_mergeBound = self.mergeBound + 2
+            elif merge_bound_incr == 3:
+                LL_mergeBound = self.mergeBound + 3
+            elif merge_bound_incr == 4:
+                LL_mergeBound = self.mergeBound + 4
+            else:
+                LL_mergeBound = self.mergeBound + 5
         else:
             LL_mergeBound = self.mergeBound
 
         # Use MA-CBS with an increased bound on the merge conflicts to solve the meta agent's paths
-        LowLevel_MA_CBS = MA_CBSSolver(self.my_map, MA_starts, MA_goals, LL_mergeBound, self.depth + 1)
+        LowLevel_MA_CBS = MA_CBSSolver(self.my_map, MA_starts, MA_goals, LL_mergeBound, self.depth + 1, self.start_time, merge_bound_incr)
         LL_paths = LowLevel_MA_CBS.find_solution(disjoint, MA_constraints)
 
-        # Convert the constraint LL agent numbers to upper constraint numbers
-        for constraint in MA_constraints:
-            # Convert the lower solver agent numbers to the upper solver agent numbers for the constraint
-                H_constrained_agents = []
-                for agent in constraint['agents']:
-                    H_constrained_agents.append( LL_agent_list[agent] )
-
-                constraint['agents'] = H_constrained_agents
+        ensure_dif_paths(node)
+        ensure_no_duplicate_agents(node)
 
         # Put new paths into meta agent, else prune the node if no path was found
-        i = len(LL_paths)-1
-        for agent in MA:
-            if LL_paths[i] is not None:
-                node['paths'][agent] = LL_paths[i]
-            else:
-                return None
-            i-=1
+        if LL_paths is not None:
+            # First sanity check the number of paths
+            assert(len(LL_paths) == len(LL_agent_list))
+
+            # Iterate through each LL agent and update the higher level agent path
+            for LL_agent in range( len(LL_paths) ):
+                H_agent = LL_agent_list[LL_agent]
+                if LL_paths[LL_agent] is not None:
+                    node['paths'][H_agent] = copy.deepcopy(LL_paths[LL_agent])
+                else:
+                    return None
+
+            # Ensure all the new paths are different start and end locations    
+            ensure_dif_paths(node)
+            ensure_no_duplicate_agents(node)
+            self.ensure_path_ends_match_goals(node)
+            ensure_no_collisions_in_MA(node)
+        else:
+            # No paths found for node, prune
+            node = None
+
+        if node is not None:
+            ensure_dif_paths(node)
+            ensure_no_duplicate_agents(node)
 
         return node
 
@@ -431,8 +559,6 @@ class MA_CBSSolver(object):
 
         disjoint    - use disjoint splitting or not
         """
-
-        self.start_time = timer.time()
 
         # Generate the root node
         # constraints   - list of constraints
@@ -447,20 +573,28 @@ class MA_CBSSolver(object):
                 'collisionMatrix': [], # Store the number of collisions between meta agents
                 'metaAgentGroups': []} # Store individual agents that are a part of a meta agent
 
+        # Set up each agent as a meta agent
+        root['metaAgentGroups'] = [[agent] for agent in range(self.num_of_agents)]
+
+        # Ensure any input constraints have correct meta agent value
+        for constraint in root['constraints']:
+            constraint['metaAgent'] = which_meta_agent(constraint['agents'][0], root['metaAgentGroups'])
+
         for i in range(self.num_of_agents):  # Find initial path for each agent -- for MACBS as low level, need to keep track which agents these are for, constraints dont apply to the same agents anymore
             path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
                           i, root['constraints'])
             if path is None:
+                return None
                 raise BaseException('No solutions')
             root['paths'].append(path)
-
-        # Set up each agent as a meta agent
-        root['metaAgentGroups'] = [[agent] for agent in range(self.num_of_agents)]
 
         # Calculate the cost, collisions, and collision matrix for the root
         root['cost'] = get_sum_of_cost(root['paths'])
         root['collisions'] = detect_collisions(root['paths'], root['metaAgentGroups'])
         root['collisionMatrix'] = calc_collision_mat(root['paths'], root['metaAgentGroups'])
+
+        ensure_dif_paths(root)
+        ensure_no_duplicate_agents(root)
 
         self.push_node(root)
 
@@ -481,6 +615,9 @@ class MA_CBSSolver(object):
                 self.goal_node = next_node
                 break
 
+            if timer.time() - self.start_time > TIME_LIMIT:
+                return None
+
             # Pick a collision from the collision list to solve
             collision = next_node['collisions'][-1]
 
@@ -492,22 +629,31 @@ class MA_CBSSolver(object):
 
             #**************** Detect if merging should occur ****************#
             if(should_merge(MA1, MA2, next_node['collisionMatrix'], self.mergeBound)):
+                
+                # Combine the agents into the min MA group
+                minMA = min(MA1, MA2)
+                maxMA = max(MA1, MA2)
 
-                # Merge the two agents into a meta agent
-                [next_node['metaAgentGroups'], next_node['constraints']] = merge(MA1, MA2, next_node['metaAgentGroups'], next_node['constraints'])
+                # Merge the constraints of the two agents
+                node_constraints = combine_constraints(minMA, maxMA, next_node['metaAgentGroups'], next_node['constraints'])
 
-                # Get all the agents in the new meta agent
-                MA_num = which_meta_agent(a1, next_node['metaAgentGroups'])
-                MA = next_node['metaAgentGroups'][MA_num]
+                # Merge the two meta agent agents into one meta agent
+                next_node['metaAgentGroups'] = merge(minMA, maxMA, next_node['metaAgentGroups'])
+
+                # With the new meta agent groups, need to update the contraints to apply to the correct meta agent
+                node_constraints = update_constraints(node_constraints, minMA, maxMA)
+
+                # This is a lower level solver for a merge case
+                MERGE = True
 
                 # Find the new paths for all agents in the meta agent after merge
-                LL_paths = self.lower_level_solver(MA, next_node['metaAgentGroups'], next_node['constraints'], disjoint, True)
+                next_node = self.lower_level_solver([minMA], next_node, disjoint, MERGE, self.merge_bound_incr)
 
-                # Put the new paths into correct agents paths
-                i = len(LL_paths)-1
-                for agent in MA:
-                    next_node['paths'][agent] = LL_paths[i]
-                    i-=1
+                #print("\t"*self.depth + "Returning from merge")
+
+                # If the lower level solver could not find a solution for the merged node, it gets pruned
+                if next_node == None:
+                    continue
 
                 # Update this node's information based on new path(s)
                 next_node['collisions'] = detect_collisions(next_node['paths'], next_node['metaAgentGroups'])
@@ -519,7 +665,6 @@ class MA_CBSSolver(object):
 
                 # Continue to the next best node in the open list
                 continue
-
                 #****************        END OF MERGING        ****************#
 
             constraints = []
@@ -539,18 +684,18 @@ class MA_CBSSolver(object):
 
                 # For disjoint splitting calculate new paths for all agents whos path violates the new positive constraint
                 if disjoint and constraint['positive']:
-                    MA_constrained += disjoint_paths_violate_constraint(constraint, new_node['paths'])
+                    MA_constrained += disjoint_paths_violate_constraint(constraint, new_node['paths']) # Ensure the meta agent of the paths is added to MA_constrained
  
                 # This is not the merging of two meta agents
                 MERGE = False
  
                 # Find the new paths for all agents in the meta agent after merge
-                new_node = self.lower_level_solver(MA_constrained, new_node, disjoint, MERGE)
+                new_node = self.lower_level_solver(MA_constrained, new_node, disjoint, MERGE, self.merge_bound_incr)
 
                 # Paths could not be found based on contraints, prune
                 if(new_node is None):
                     continue
-
+                
                 # Update new node's information based on new path(s)
                 new_node['collisions'] = detect_collisions(new_node['paths'], new_node['metaAgentGroups'])
                 new_node['cost'] = get_sum_of_cost(new_node['paths'])
